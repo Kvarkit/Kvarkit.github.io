@@ -79,7 +79,20 @@
      absent the stalks still sway; they just do not lean. */
 
   var scene = document.querySelector('.scene');
-  if (scene && window.matchMedia && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (scene && window.matchMedia) {
+    /* Re-read the preference instead of latching it at load: a reader who turns
+       reduced-motion on mid-session must lose the lean without reloading, which
+       is what meatproxy.js already does for the illustration slot. The listener
+       only flips a flag; --pon is cleared so any lean already applied unwinds. */
+    var mq = matchMedia('(prefers-reduced-motion: reduce)');
+    var still = mq.matches;
+    var onChange = function () {
+      still = mq.matches;
+      if (still) scene.style.setProperty('--pon', '0');
+    };
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else if (mq.addListener) mq.addListener(onChange);
+
     var stalks = scene.querySelectorAll('.near g,.pxplane g');
 
     function measure() {
@@ -94,6 +107,7 @@
     addEventListener('resize', measure, { passive: true });
 
     scene.addEventListener('pointermove', function (e) {
+      if (still) return;                       // preference may have flipped since load
       if (e.pointerType === 'touch') return;   // no hover on touch; leave it still
       scene.style.setProperty('--px', (e.clientX - scene.getBoundingClientRect().left) + 'px');
       scene.style.setProperty('--pon', '1');
