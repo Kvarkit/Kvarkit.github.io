@@ -1,17 +1,12 @@
 /* Signal Garden — homepage behaviour.
    Two jobs only:
    1. progressive-enhance the invitation with a clipboard copy button;
-   2. an ambient, reduced-motion-gated reveal for content below the fold.
+   2. persist the colour theme across pages (the radios already switch it with
+      pure CSS via :has(), so this only adds persistence).
    Everything on the page is fully readable and usable with this file absent. */
 
 (function () {
   'use strict';
-
-  var reduceMotion = false;
-  try {
-    reduceMotion = !!(window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  } catch (e) { /* no matchMedia: assume motion is unwelcome */ reduceMotion = true; }
 
   /* ---------- 1. copy the invitation ---------- */
 
@@ -50,32 +45,62 @@
     button.hidden = false;
   }
 
-  /* ---------- 2. ambient reveal (motion-gated) ---------- */
+  /* ---------- 2. theme persistence ---------- */
 
-  if (reduceMotion || typeof window.IntersectionObserver !== 'function') return;
+  var THEMES = ['garden', 'terminal', 'pixel'];
 
-  var targets = document.querySelectorAll('.reveal');
-  if (!targets.length) return;
-
-  // Only opt the page into the hidden start-state once we know we can undo it.
-  document.documentElement.classList.add('js');
-
-  var observer = new window.IntersectionObserver(function (entries) {
-    for (var i = 0; i < entries.length; i++) {
-      if (entries[i].isIntersecting) {
-        entries[i].target.classList.add('in');
-        observer.unobserve(entries[i].target);
-      }
-    }
-  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.01 });
-
-  for (var i = 0; i < targets.length; i++) {
-    targets[i].style.transitionDelay = Math.min(i, 6) * 70 + 'ms';
-    observer.observe(targets[i]);
+  function applyTheme(name) {
+    if (THEMES.indexOf(name) < 0) name = 'garden';
+    document.documentElement.setAttribute('data-theme', name);
+    var input = document.getElementById('t-' + name);
+    if (input) input.checked = true;
+    try { localStorage.setItem('gpb-theme', name); } catch (e) {}
   }
 
-  // Safety net: if anything goes wrong, show everything.
-  window.setTimeout(function () {
-    for (var j = 0; j < targets.length; j++) targets[j].classList.add('in');
-  }, 4000);
+  try {
+    var saved = localStorage.getItem('gpb-theme');
+    if (saved) applyTheme(saved);
+  } catch (e) {}
+
+  var radios = document.querySelectorAll('.themes input[name="theme"]');
+  for (var i = 0; i < radios.length; i++) {
+    (function (el) {
+      el.addEventListener('change', function () {
+        applyTheme(el.id.replace('t-', ''));
+      });
+    })(radios[i]);
+  }
+
+  /* ---------- 3. the garden notices the pointer ----------
+     One listener writes two numbers onto the scene: where the pointer is, and
+     whether it is inside at all. Each stalk was measured once and carries its
+     own --gx, so the bend is computed per stalk by CSS, on the compositor -
+     this handler never reads layout and never touches a stalk. With this file
+     absent the stalks still sway; they just do not lean. */
+
+  var scene = document.querySelector('.scene');
+  if (scene && window.matchMedia && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var stalks = scene.querySelectorAll('.near g,.pxplane g');
+
+    function measure() {
+      var left = scene.getBoundingClientRect().left;
+      for (var i = 0; i < stalks.length; i++) {
+        var r = stalks[i].getBoundingClientRect();
+        stalks[i].style.setProperty('--gx', (r.left + r.width / 2 - left) + 'px');
+      }
+    }
+
+    measure();
+    addEventListener('resize', measure, { passive: true });
+
+    scene.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'touch') return;   // no hover on touch; leave it still
+      scene.style.setProperty('--px', (e.clientX - scene.getBoundingClientRect().left) + 'px');
+      scene.style.setProperty('--pon', '1');
+    }, { passive: true });
+
+    scene.addEventListener('pointerleave', function () {
+      scene.style.setProperty('--pon', '0');
+    }, { passive: true });
+  }
 })();

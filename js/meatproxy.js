@@ -6,6 +6,25 @@
 (() => {
   'use strict';
 
+  /* ---------- theme: token-only, persisted across pages ----------
+     With JS off the :has() selectors in tokens.css still switch the theme for
+     the current page; this only makes the choice survive navigation. */
+  const THEMES = ['garden', 'terminal', 'pixel'];
+  const applyTheme = name => {
+    if (THEMES.indexOf(name) < 0) name = 'garden';
+    document.documentElement.setAttribute('data-theme', name);
+    const input = document.getElementById('t-' + name);
+    if (input) input.checked = true;
+    try { localStorage.setItem('gpb-theme', name); } catch (e) { /* private mode */ }
+  };
+  try {
+    const saved = localStorage.getItem('gpb-theme');
+    if (saved) applyTheme(saved);
+  } catch (e) { /* private mode */ }
+  for (const el of document.querySelectorAll('.themes input[name="theme"]')) {
+    el.addEventListener('change', () => applyTheme(el.id.replace('t-', '')));
+  }
+
   /* ---------- feed: Latest / Top ---------- */
   const feedNav = document.querySelector('nav.sort');
   if (feedNav) {
@@ -14,7 +33,8 @@
 
     const wanted = () => {
       const hash = location.hash.replace('#', '');
-      if (hash === 'top' || hash === 'latest') return hash === 'top' ? 'top' : 'new';
+      if (hash === 'top' || hash === 'top-panel') return 'top';
+      if (hash === 'latest' || hash === 'latest-panel') return 'new';
       const sort = new URLSearchParams(location.search).get('sort');
       return sort === 'top' ? 'top' : 'new';
     };

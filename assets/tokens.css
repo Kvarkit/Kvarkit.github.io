@@ -32,12 +32,29 @@
   --step-2:clamp(24px,1.3rem + 1.1vw,34px);
   --step-3:clamp(32px,1.6rem + 2.4vw,54px);
   --step-4:clamp(40px,1.9rem + 5.2vw,92px);
+  /* the slogan's own scale, tied to the width of the column it lives in rather
+     than to the type scale: the packet takes the right ~40%, so "No
+     spectators." has to fit the remaining ~53% on one line at every width
+     between 900 and 1600px. */
+  --step-display:clamp(34px,5.4vw,78px);
 
   /* rhythm */
   --gap:clamp(16px,2.2vw,28px);
   --pad:clamp(20px,5vw,72px);
   --measure:68ch;
   --radius:2px;
+
+  /* Swatch palette: each theme's own ground and signal, available in EVERY
+     theme, because the theme buttons are painted in the theme they select and
+     therefore need colours other than the active one. These are copies of the
+     three palettes below; keep them in step. */
+  --sw-garden-bg:#080b08;   --sw-garden-ink:#bdfb78;
+  --sw-terminal-bg:#000d05; --sw-terminal-ink:#4dff92;
+  --sw-pixel-bg:#0f1420;    --sw-pixel-ink:#8bff6a;
+  --sw-garden-font:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sw-terminal-font:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sw-pixel-font:"Silkscreen","Press Start 2P","W95FA","Fixedsys","Terminus",
+    "MS Gothic","Monaco",ui-monospace,monospace;
 
   --tap:44px;          /* minimum touch target */
   --ease:cubic-bezier(.2,.7,.2,1);
@@ -51,7 +68,7 @@ body{margin:0;background:var(--bg-0);color:var(--ink-0);
 img,svg{max-width:100%;height:auto}
 
 a{color:var(--sig);text-underline-offset:.22em;text-decoration-thickness:1px}
-a:hover{color:#d6ffa4}
+a:hover{color:var(--sig-dim)}
 :focus-visible{outline:2px solid var(--sig);outline-offset:3px;border-radius:var(--radius)}
 
 .skip{position:absolute;left:-9999px;top:0;background:var(--bg-2);color:var(--ink-0);
@@ -69,3 +86,147 @@ a:hover{color:#d6ffa4}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+
+/* ---------------------------------------------------------------
+   Themes. Default (no attribute) = Signal Garden, defined above.
+   Two switches, in this order of authority:
+     1. html[data-theme="..."]  - set by JS, persisted across pages
+     2. :root:has(#t-<name>:checked) - pure CSS, works with JS off
+   Every theme redefines only tokens; no component rule may hardcode
+   a colour. Contrast for all three is enforced by contest/qa/contrast.py.
+   --------------------------------------------------------------- */
+
+/* ---- TERMINAL: single-phosphor CRT. One hue, every ink a level of it ----
+   Deliberately NOT a second green garden: the garden is a serif page with a
+   green accent, this is a monochrome instrument where the accent IS the only
+   colour and the type is all mono. The scanline, bloom and vignette below are
+   part of the palette, not decoration on top of it. */
+:root[data-theme="terminal"],
+:root:has(#t-terminal:checked){
+  --bg-0:#000d05; --bg-1:#02160a; --bg-2:#04200f;
+  --line:#0d4b25; --line-hi:#146f39;
+  --ink-0:#c9ffd9; --ink-1:#7ef7a6; --ink-2:#3fcc74;
+  --sig:#4dff92; --sig-dim:#b6ffcf; --sig-glow:rgba(77,255,146,.20);
+  --warn:#ffe066;
+  --font-display:var(--font-mono);
+  --font-ui:var(--font-mono);
+  --track-display:.01em;
+  /* mono advance is ~.6em against the serif's ~.45em, so the display scale has
+     to come down in the mono themes or the slogan runs to three lines */
+  --step-display:clamp(30px,1.2rem + 3.1vw,58px);
+  --radius:0;
+  --ease:steps(8,end);
+}
+
+/* phosphor bloom: a CRT never draws a hairline-crisp letter */
+:root[data-theme="terminal"] body,
+:root:has(#t-terminal:checked) body{
+  text-shadow:0 0 6px var(--sig-glow),0 0 2px rgba(77,255,146,.12)}
+
+/* the tube itself: scanlines, a lit centre and dark corners, and a slow
+   refresh flutter. Fixed, pointer-events:none, aria-invisible - it never
+   intercepts a click and never enters the accessibility tree. */
+:root[data-theme="terminal"] body::after,
+:root:has(#t-terminal:checked) body::after{
+  content:"";position:fixed;inset:0;z-index:40;pointer-events:none;
+  background:
+    repeating-linear-gradient(180deg,rgba(0,0,0,.34) 0 1px,transparent 1px 3px),
+    radial-gradient(120% 90% at 50% 45%,transparent 42%,rgba(0,0,0,.55) 100%);
+  mix-blend-mode:multiply;
+  animation:crt 5.2s steps(2,end) infinite}
+@keyframes crt{0%,97%{opacity:1}98%{opacity:.86}99%{opacity:1}100%{opacity:.94}}
+
+/* ---- PIXEL: a console, drawn on a grid, with no curve anywhere ---- */
+:root[data-theme="pixel"],
+:root:has(#t-pixel:checked){
+  --bg-0:#0f1420; --bg-1:#18202f; --bg-2:#212b3d;
+  --line:#33415c; --line-hi:#47597a;
+  --ink-0:#eaf2ff; --ink-1:#b8c8e0; --ink-2:#8fa3c0;
+  --sig:#8bff6a; --sig-dim:#4fd0e0; --sig-glow:rgba(139,255,106,.18);
+  --warn:#ffd23f;
+  /* No webfont is allowed, so a real bitmap face can only come from the
+     visitor's own machine. Every name before the fallback is an actual pixel
+     or bitmap font somebody may have installed; when none of them are, the
+     stack lands on the platform mono and the pixel identity is carried by the
+     drawing instead - see the pixel-art headline in index.html. */
+  --font-pixel:"Silkscreen","Press Start 2P","Pixel Operator","W95FA",
+    "Perfect DOS VGA 437","Fixedsys Excelsior","Fixedsys","Terminus","MS Gothic",
+    "Monaco",ui-monospace,Consolas,monospace;
+  --font-display:var(--font-pixel);
+  --font-ui:var(--font-pixel);
+  /* the fallback list is spelled out rather than ending in var(--font-mono):
+     --font-mono is itself redefined here, and a custom property that references
+     a property that references it back is a cycle - both resolve to the
+     guaranteed-invalid value and every font on the page silently reverts. */
+  --font-mono:var(--font-pixel);
+  --track-display:0em;
+  /* mono advance is ~.6em against the serif's ~.45em, so the display scale has
+     to come down in the mono themes or the slogan runs to three lines */
+  --step-display:clamp(30px,1.2rem + 3.1vw,58px);
+  --radius:0;
+  --ease:steps(6,end);
+}
+
+/* nothing in this theme is allowed a soft edge or a subpixel position */
+:root[data-theme="pixel"] *,
+:root:has(#t-pixel:checked) *{
+  shape-rendering:crispEdges;image-rendering:pixelated;
+  border-radius:0!important;filter:none!important}
+/* hard offset shadow instead of a blur, and a 2px dither over raised panels */
+:root[data-theme="pixel"] .packet,:root:has(#t-pixel:checked) .packet,
+:root[data-theme="pixel"] .panel,:root:has(#t-pixel:checked) .panel{
+  box-shadow:4px 4px 0 var(--line);
+  background-image:repeating-conic-gradient(var(--line) 0 25%,transparent 0 50%);
+  background-size:4px 4px}
+:root[data-theme="pixel"] body::after,
+:root:has(#t-pixel:checked) body::after{
+  content:"";position:fixed;inset:0;z-index:40;pointer-events:none;
+  background:repeating-linear-gradient(180deg,rgba(0,0,0,.22) 0 2px,transparent 2px 4px)}
+
+/* ---------------------------------------------------------------
+   The theme control. Each button is a swatch of the theme it selects and is
+   painted that way in every theme: garden is serif on garden black, terminal
+   is a green prompt on tube black, pixel is a bevelled tile on slate. The
+   control is the one place on the page where the active theme does NOT decide
+   what a component looks like - that is the point of it, you can see what you
+   are choosing before you choose it.
+   --------------------------------------------------------------- */
+.themes{display:inline-flex;align-items:center;gap:0;padding:0;
+  border:1px solid var(--line-hi);border-radius:var(--radius);overflow:hidden}
+.themes input{position:absolute;width:1px;height:1px;margin:-1px;padding:0;
+  overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.themes label{display:inline-flex;align-items:center;justify-content:center;
+  min-height:var(--tap);min-width:var(--tap);padding:0 .7em;cursor:pointer;
+  font-size:var(--step--1);letter-spacing:.1em;text-transform:uppercase;
+  border-right:1px solid var(--line-hi);
+  transition:filter .25s var(--ease),box-shadow .25s var(--ease)}
+.themes label:last-of-type{border-right:0}
+
+/* unselected swatches are dimmed, so the current theme still reads at a glance */
+.themes label{filter:saturate(.45) brightness(.62)}
+.themes input:checked + label{filter:none}
+.themes label:hover{filter:saturate(.8) brightness(.85)}
+.themes input:checked + label:hover{filter:none}
+.themes input:focus-visible + label{outline:2px solid var(--sig);outline-offset:2px}
+
+.themes label[for="t-garden"]{background:var(--sw-garden-bg);color:var(--sw-garden-ink);
+  font-family:var(--sw-garden-font);letter-spacing:.06em;text-transform:none;
+  font-size:var(--step-0);font-style:italic}
+.themes input:checked + label[for="t-garden"]{
+  box-shadow:inset 0 0 0 2px var(--sw-garden-ink),inset 0 0 18px rgba(189,251,120,.22)}
+
+.themes label[for="t-terminal"]{background:var(--sw-terminal-bg);color:var(--sw-terminal-ink);
+  font-family:var(--sw-terminal-font);
+  text-shadow:0 0 6px rgba(77,255,146,.5);
+  background-image:repeating-linear-gradient(180deg,rgba(0,0,0,.36) 0 1px,transparent 1px 3px)}
+.themes label[for="t-terminal"]::before{content:"> "}
+.themes input:checked + label[for="t-terminal"]{
+  box-shadow:inset 0 0 0 2px var(--sw-terminal-ink)}
+
+.themes label[for="t-pixel"]{background:var(--sw-pixel-bg);color:var(--sw-pixel-ink);
+  font-family:var(--sw-pixel-font);letter-spacing:.02em;
+  image-rendering:pixelated;
+  box-shadow:inset 2px 2px 0 rgba(255,255,255,.14),inset -2px -2px 0 rgba(0,0,0,.5)}
+.themes input:checked + label[for="t-pixel"]{
+  box-shadow:inset 2px 2px 0 rgba(255,255,255,.5),inset -2px -2px 0 rgba(0,0,0,.55),
+             inset 0 0 0 2px var(--sw-pixel-ink)}
