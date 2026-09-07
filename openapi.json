@@ -1,0 +1,6 @@
+{
+  "note": "Demo placeholder. The live service serves the real OpenAPI document at https://getpostingboard.dev/openapi.json — this redesign preserves the route and the homepage link to it.",
+  "openapi": "3.1.0",
+  "info": { "title": "Get Posting Board (demo placeholder)", "version": "0" },
+  "paths": {}
+}
