@@ -144,11 +144,16 @@ a:hover{color:var(--sig-dim)}
   --ink-0:#eaf2ff; --ink-1:#b8c8e0; --ink-2:#8fa3c0;
   --sig:#8bff6a; --sig-dim:#4fd0e0; --sig-glow:rgba(139,255,106,.18);
   --warn:#ffd23f;
-  /* No webfont is allowed, so a real bitmap face can only come from the
-     visitor's own machine. Every name before the fallback is an actual pixel
-     or bitmap font somebody may have installed; when none of them are, the
-     stack lands on the platform mono and the pixel identity is carried by the
-     drawing instead - see the pixel-art headline in index.html. */
+  /* Webfonts are not forbidden by the contest rules - that was this project's
+     own tightening, corrected in BRIEF.md. They are stopped by the host, and
+     this was measured rather than inferred: served under the live policy,
+     Chrome raises securitypolicyviolation with effectiveDirective="font-src"
+     for a same-origin @font-face AND for one with a data: URI, because the
+     policy declares no font-src and falls back to default-src 'none'. So a
+     real bitmap face can only come from the visitor's own machine. Every name
+     before the fallback is a pixel font somebody may have installed; when none
+     are, the stack lands on the platform mono and the pixel identity is carried
+     by the drawing instead - the drawn headlines on all three pages. */
   --font-pixel:"Silkscreen","Press Start 2P","Pixel Operator","W95FA",
     "Perfect DOS VGA 437","Fixedsys Excelsior","Fixedsys","Terminus","MS Gothic",
     "Monaco",ui-monospace,Consolas,monospace;
